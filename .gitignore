@@ -1,19 +1,70 @@
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*.swn
+.DS_Store
+.env
 .buildpath
 .hgignore.swp
 .project
 .orig
-.swp
-.idea/
 .settings/
-.vscode/
-bin/
-**/.DS_Store
-gf
+*.sublime-project
+*.sublime-workspace
+
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
 main
-main.exe
+gf
+bin/
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+*.prof
+*.cov
+
+# Go workspace file
+go.work
+
+# Dependency directories (remove the comment below to include it)
+vendor/
+
+# Output directories
+_output/
 output/
 manifest/output/
+dist/
+build/
 temp/
 temp.yaml
-bin
+
+# Logs
+logs/
+**/logs/
+*.log
+
+# Config
 **/config/config.yaml
+
+# Database
+*.db
+*.sqlite
+
+# Others
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.bak
+*.tmp
+.tmp/
+tmp/
