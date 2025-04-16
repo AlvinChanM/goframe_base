@@ -20,6 +20,9 @@ var (
 		Usage: "main",
 		Brief: "start http server",
 		Func: func(ctx context.Context, parser *gcmd.Parser) (err error) {
+			// 初始化自定义日志格式
+			logger := middleware.NewLogger()
+
 			// 获取环境变量
 			var configEnv string
 			v, err := g.Cfg().GetWithEnv(ctx, "ENV")
@@ -27,7 +30,7 @@ var (
 				configEnv = v.String()
 			}
 			config_file := fmt.Sprintf("config.%s.yaml", configEnv)
-			fmt.Println("config_file:", config_file)
+			logger.Info("config_file:", config_file)
 
 			// 设置配置文件路径和名称
 			g.Cfg().GetAdapter().(*gcfg.AdapterFile).SetPath("manifest/config")
@@ -36,21 +39,22 @@ var (
 			// 获取并打印数据库配置，确保配置正确加载
 			dbConfig := g.Cfg().MustGet(ctx, "database")
 			if dbConfig.IsEmpty() {
-				panic("数据库配置未找到")
+				logger.Error("数据库配置未找到")
+				return fmt.Errorf("数据库配置未找到")
 			}
-			fmt.Printf("Database config: %+v\n", dbConfig)
+			middleware.NewLogger().WithFields(dbConfig.Map()).Info("Database config loaded")
 
 			// 测试数据库连接
 			if err := g.DB().PingMaster(); err != nil {
-				panic(fmt.Sprintf("数据库连接测试失败: %v", err))
+				return err
 			}
-			fmt.Println("数据库连接成功")
+			logger.Info("数据库连接成功")
 
 			// 创建服务器实例
 			s := g.Server()
 
 			// 注册全局中间件
-			s.Use(middleware.Trace, middleware.LogAccess)
+			s.Use(middleware.AccessLog, middleware.Trace)
 
 			s.Group("/", func(group *ghttp.RouterGroup) {
 				group.Middleware(ghttp.MiddlewareHandlerResponse)
