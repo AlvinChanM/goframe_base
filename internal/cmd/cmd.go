@@ -11,6 +11,7 @@ import (
 	"github.com/gogf/gf/v2/os/gcmd"
 
 	"github.com/AlvinChanM/goframe_base/internal/controller/hello"
+	"github.com/AlvinChanM/goframe_base/internal/middleware"
 )
 
 var (
@@ -19,30 +20,46 @@ var (
 		Usage: "main",
 		Brief: "start http server",
 		Func: func(ctx context.Context, parser *gcmd.Parser) (err error) {
-			// 首先设置配置文件
+			// 获取环境变量
+			var configEnv string
 			v, err := g.Cfg().GetWithEnv(ctx, "ENV")
-			if err != nil {
-				panic(err)
+			if err == nil && v.String() != "" {
+				configEnv = v.String()
 			}
-			config_file := fmt.Sprintf("config.%s.yaml", v.String())
-			fmt.Println(config_file)
+			config_file := fmt.Sprintf("config.%s.yaml", configEnv)
+			fmt.Println("config_file:", config_file)
+
+			// 设置配置文件路径和名称
+			g.Cfg().GetAdapter().(*gcfg.AdapterFile).SetPath("manifest/config")
 			g.Cfg().GetAdapter().(*gcfg.AdapterFile).SetFileName(config_file)
+
+			// 获取并打印数据库配置，确保配置正确加载
+			dbConfig := g.Cfg().MustGet(ctx, "database")
+			if dbConfig.IsEmpty() {
+				panic("数据库配置未找到")
+			}
+			fmt.Printf("Database config: %+v\n", dbConfig)
 
 			// 测试数据库连接
 			if err := g.DB().PingMaster(); err != nil {
-				fmt.Println(err)
+				panic(fmt.Sprintf("数据库连接测试失败: %v", err))
 			}
-			server := g.Cfg().MustGet(ctx, "server").Map()
-			fmt.Println(server)
+			fmt.Println("数据库连接成功")
 
-			// 然后创建服务器实例
+			// 创建服务器实例
 			s := g.Server()
+
+			// 注册全局中间件
+			s.Use(middleware.Trace, middleware.LogAccess)
+
 			s.Group("/", func(group *ghttp.RouterGroup) {
 				group.Middleware(ghttp.MiddlewareHandlerResponse)
 				group.Bind(
 					hello.NewV1(),
 				)
 			})
+
+			// 启动服务器
 			s.Run()
 			return nil
 		},
